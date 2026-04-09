@@ -413,10 +413,16 @@ export async function getDashboardData() {
   let omzet = 0;
   let omzetHariIni = 0;
   let omzetBulanIni = 0;
+  let labaHariIni = 0;
+  let labaBulanIni = 0;
+  let terjualHariIni = 0;
+  let terjualBulanIni = 0;
 
   for (const r of transRows) {
     const idTrx = r[0];
     const total = parseInt(r[8] || "0");
+    const qty = parseInt(r[4] || "0");
+    const labaItem = (parseInt(r[5] || "0") - parseInt(r[6] || "0")) * qty;
     const txDate = new Date(r[1]);
 
     if (!seenTrx.has(idTrx)) {
@@ -424,27 +430,33 @@ export async function getDashboardData() {
       omzet += total;
     }
 
-    if (
+    const isToday =
       !isNaN(txDate.getTime()) &&
       txDate.getFullYear() === todayY &&
       txDate.getMonth() === todayM &&
-      txDate.getDate() === todayD
-    ) {
+      txDate.getDate() === todayD;
+
+    const isThisMonth =
+      !isNaN(txDate.getTime()) &&
+      txDate.getFullYear() === todayY &&
+      txDate.getMonth() === todayM;
+
+    if (isToday) {
       if (!seenTrxHariIni.has(idTrx)) {
         seenTrxHariIni.add(idTrx);
         omzetHariIni += total;
       }
+      labaHariIni += labaItem;
+      terjualHariIni += qty;
     }
 
-    if (
-      !isNaN(txDate.getTime()) &&
-      txDate.getFullYear() === todayY &&
-      txDate.getMonth() === todayM
-    ) {
+    if (isThisMonth) {
       if (!seenTrxBulanIni.has(idTrx)) {
         seenTrxBulanIni.add(idTrx);
         omzetBulanIni += total;
       }
+      labaBulanIni += labaItem;
+      terjualBulanIni += qty;
     }
   }
 
@@ -462,6 +474,10 @@ export async function getDashboardData() {
     omzet_hari_ini: omzetHariIni,
     omzet_bulan_ini: omzetBulanIni,
     laba,
+    laba_hari_ini: labaHariIni,
+    laba_bulan_ini: labaBulanIni,
+    terjual_hari_ini: terjualHariIni,
+    terjual_bulan_ini: terjualBulanIni,
     transaksi_terbaru: transaksiTerbaru,
   };
 }

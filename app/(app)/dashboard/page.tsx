@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
-import { Package, TrendingUp, ShoppingBag, DollarSign, BarChart2, RefreshCw, CalendarDays, Calendar } from "lucide-react";
+import { ShoppingBag, DollarSign, BarChart2, RefreshCw, CalendarDays, Calendar, TrendingUp } from "lucide-react";
 import { formatCurrency, formatDateTime } from "@/lib/utils";
 import LoadingSpinner from "@/components/LoadingSpinner";
 import type { Transaction } from "@/lib/sheets";
@@ -19,6 +19,10 @@ interface DashboardData {
   omzet_hari_ini: number;
   omzet_bulan_ini: number;
   laba: number;
+  laba_hari_ini: number;
+  laba_bulan_ini: number;
+  terjual_hari_ini: number;
+  terjual_bulan_ini: number;
   transaksi_terbaru: Transaction[];
 }
 
@@ -109,13 +113,16 @@ export default function DashboardPage() {
   }
   if (!data) return null;
 
-  const stats = [
+  const statsRow1 = [
     { label: "Omzet Hari Ini", value: formatCurrency(data.omzet_hari_ini), icon: CalendarDays, color: "text-blue-600", bg: "bg-blue-50" },
     { label: "Omzet Bulan Ini", value: formatCurrency(data.omzet_bulan_ini), icon: Calendar, color: "text-indigo-600", bg: "bg-indigo-50" },
-    { label: "Stok Aktif", value: `${data.total_stok_aktif} Item`, icon: Package, color: "text-teal-600", bg: "bg-teal-50" },
-    { label: "Total Terjual", value: `${data.total_barang_terjual} Pcs`, icon: ShoppingBag, color: "text-purple-600", bg: "bg-purple-50" },
-    { label: "Omzet Total", value: formatCurrency(data.omzet), icon: DollarSign, color: "text-yellow-600", bg: "bg-yellow-50" },
-    { label: "Laba Total", value: formatCurrency(data.laba), icon: BarChart2, color: "text-emerald-600", bg: "bg-emerald-50" },
+    { label: "Laba Hari Ini", value: formatCurrency(data.laba_hari_ini), icon: TrendingUp, color: "text-emerald-600", bg: "bg-emerald-50" },
+    { label: "Laba Bulan Ini", value: formatCurrency(data.laba_bulan_ini), icon: BarChart2, color: "text-green-600", bg: "bg-green-50" },
+  ];
+
+  const statsRow2 = [
+    { label: "Terjual Hari Ini", value: `${data.terjual_hari_ini} Pcs`, icon: ShoppingBag, color: "text-purple-600", bg: "bg-purple-50" },
+    { label: "Terjual Bulan Ini", value: `${data.terjual_bulan_ini} Pcs`, icon: DollarSign, color: "text-yellow-600", bg: "bg-yellow-50" },
   ];
 
   return (
@@ -132,9 +139,25 @@ export default function DashboardPage() {
         </button>
       </div>
 
-      {/* Stats */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
-        {stats.map((stat) => {
+      {/* Stats Row 1 — Omzet & Laba */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        {statsRow1.map((stat) => {
+          const Icon = stat.icon;
+          return (
+            <div key={stat.label} className="card">
+              <div className={`inline-flex p-2 rounded-lg ${stat.bg} mb-3`}>
+                <Icon size={18} className={stat.color} />
+              </div>
+              <p className="text-xs text-gray-500 mb-1">{stat.label}</p>
+              <p className="text-lg font-semibold text-gray-900 leading-tight">{stat.value}</p>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Stats Row 2 — Terjual */}
+      <div className="grid grid-cols-2 gap-4">
+        {statsRow2.map((stat) => {
           const Icon = stat.icon;
           return (
             <div key={stat.label} className="card">
@@ -275,39 +298,39 @@ export default function DashboardPage() {
               {chartData.stokData.length === 0 ? (
                 <p className="text-center text-sm text-gray-400 py-10">Belum ada data barang</p>
               ) : (
-                <ResponsiveContainer width="100%" height={Math.max(280, chartData.stokData.length * 32)}>
+                <ResponsiveContainer width="100%" height={280}>
                   <BarChart
                     data={chartData.stokData}
-                    layout="vertical"
-                    margin={{ top: 4, right: 32, left: 0, bottom: 0 }}
+                    margin={{ top: 4, right: 8, left: 0, bottom: 60 }}
                   >
-                    <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#f0f0f0" />
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f0f0f0" />
                     <XAxis
-                      type="number"
-                      tick={{ fontSize: 11, fill: "#9ca3af" }}
-                      tickLine={false}
-                      axisLine={false}
-                    />
-                    <YAxis
-                      type="category"
                       dataKey="nama"
                       tick={{ fontSize: 11, fill: "#374151" }}
                       tickLine={false}
                       axisLine={false}
-                      width={100}
+                      interval={0}
+                      angle={-35}
+                      textAnchor="end"
+                    />
+                    <YAxis
+                      tick={{ fontSize: 11, fill: "#9ca3af" }}
+                      tickLine={false}
+                      axisLine={false}
+                      width={32}
                     />
                     <Tooltip
                       formatter={(value: number) => [value, "Stok"]}
                       contentStyle={{ fontSize: 12, borderRadius: 8, border: "1px solid #e5e7eb" }}
                     />
                     <ReferenceLine
-                      x={STOCK_THRESHOLD}
+                      y={STOCK_THRESHOLD}
                       stroke="#ef4444"
                       strokeDasharray="4 3"
                       strokeWidth={1.5}
                       label={{ value: `Min. ${STOCK_THRESHOLD}`, position: "insideTopRight", fontSize: 10, fill: "#ef4444", dy: -4 }}
                     />
-                    <Bar dataKey="stok" radius={[0, 4, 4, 0]}>
+                    <Bar dataKey="stok" radius={[4, 4, 0, 0]}>
                       {chartData.stokData.map((entry, index) => (
                         <Cell
                           key={index}
