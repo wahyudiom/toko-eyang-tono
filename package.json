@@ -1,5 +1,5 @@
 {
-  "name": "toko-eyang-tono",
+  "name": "toko-kalimantan",
   "version": "0.1.0",
   "private": true,
   "scripts": {
@@ -14,7 +14,8 @@
     "googleapis": "^140.0.1",
     "jose": "^5.2.4",
     "lucide-react": "^0.363.0",
-    "clsx": "^2.1.0"
+    "clsx": "^2.1.0",
+    "recharts": "^2.12.7"
   },
   "devDependencies": {
     "typescript": "^5",

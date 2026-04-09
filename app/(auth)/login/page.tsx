@@ -47,7 +47,7 @@ export default function LoginPage() {
           <div className="inline-flex items-center justify-center w-14 h-14 bg-blue-600 rounded-xl mb-4">
             <Store size={28} className="text-white" />
           </div>
-          <h1 className="text-2xl font-bold text-gray-900">Toko Eyang Tono</h1>
+          <h1 className="text-2xl font-bold text-gray-900">Toko Kalimantan</h1>
           <p className="text-sm text-gray-500 mt-1">Sistem Manajemen Stok & Penjualan</p>
         </div>
 

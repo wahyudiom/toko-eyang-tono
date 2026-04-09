@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Toko Eyang Tono",
+  title: "Toko Kalimantan",
   description: "Sistem Manajemen Stok dan Penjualan",
 };
 

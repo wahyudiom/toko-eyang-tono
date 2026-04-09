@@ -402,12 +402,49 @@ export async function getDashboardData() {
     0
   );
 
+  const now = new Date();
+  const todayY = now.getFullYear();
+  const todayM = now.getMonth();
+  const todayD = now.getDate();
+
   const seenTrx = new Set<string>();
+  const seenTrxHariIni = new Set<string>();
+  const seenTrxBulanIni = new Set<string>();
   let omzet = 0;
+  let omzetHariIni = 0;
+  let omzetBulanIni = 0;
+
   for (const r of transRows) {
-    if (!seenTrx.has(r[0])) {
-      seenTrx.add(r[0]);
-      omzet += parseInt(r[8] || "0");
+    const idTrx = r[0];
+    const total = parseInt(r[8] || "0");
+    const txDate = new Date(r[1]);
+
+    if (!seenTrx.has(idTrx)) {
+      seenTrx.add(idTrx);
+      omzet += total;
+    }
+
+    if (
+      !isNaN(txDate.getTime()) &&
+      txDate.getFullYear() === todayY &&
+      txDate.getMonth() === todayM &&
+      txDate.getDate() === todayD
+    ) {
+      if (!seenTrxHariIni.has(idTrx)) {
+        seenTrxHariIni.add(idTrx);
+        omzetHariIni += total;
+      }
+    }
+
+    if (
+      !isNaN(txDate.getTime()) &&
+      txDate.getFullYear() === todayY &&
+      txDate.getMonth() === todayM
+    ) {
+      if (!seenTrxBulanIni.has(idTrx)) {
+        seenTrxBulanIni.add(idTrx);
+        omzetBulanIni += total;
+      }
     }
   }
 
@@ -422,6 +459,8 @@ export async function getDashboardData() {
     total_barang_masuk: totalBarangMasuk,
     total_barang_terjual: totalBarangTerjual,
     omzet,
+    omzet_hari_ini: omzetHariIni,
+    omzet_bulan_ini: omzetBulanIni,
     laba,
     transaksi_terbaru: transaksiTerbaru,
   };

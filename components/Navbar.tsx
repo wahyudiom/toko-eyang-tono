@@ -53,7 +53,7 @@ export default function Navbar({ namaUser, role }: NavbarProps) {
           <div className="flex items-center gap-2">
             <Store size={20} className="text-blue-600" />
             <span className="font-semibold text-gray-900 text-sm">
-              Toko Eyang Tono
+              Toko Kalimantan
             </span>
           </div>
 

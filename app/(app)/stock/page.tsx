@@ -80,9 +80,9 @@ export default function StockPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           ...form,
-          jumlah_stok: parseInt(form.jumlah_stok),
-          harga_jual: parseInt(form.harga_jual),
-          harga_modal: parseInt(form.harga_modal),
+          jumlah_stok: parseInt(form.jumlah_stok, 10),
+          harga_jual: parseInt(form.harga_jual, 10),
+          harga_modal: parseInt(form.harga_modal, 10),
         }),
       });
       const data = await res.json();
@@ -122,9 +122,9 @@ export default function StockPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           ...form,
-          jumlah_stok: parseInt(form.jumlah_stok),
-          harga_jual: parseInt(form.harga_jual),
-          harga_modal: parseInt(form.harga_modal),
+          jumlah_stok: parseInt(form.jumlah_stok, 10),
+          harga_jual: parseInt(form.harga_jual, 10),
+          harga_modal: parseInt(form.harga_modal, 10),
         }),
       });
       const data = await res.json();

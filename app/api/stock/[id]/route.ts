@@ -8,19 +8,35 @@ export async function PUT(
 ) {
   const user = await getSessionFromRequest(req);
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  if (user.role === "kasir") return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  if (user.role !== "owner" && user.role !== "gudang") {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
 
   try {
     const body = await req.json();
     const { nama_barang, tanggal_masuk, jumlah_stok, notes, harga_jual, harga_modal } = body;
 
+    const stok = jumlah_stok !== undefined ? parseInt(jumlah_stok, 10) : undefined;
+    const jual = harga_jual !== undefined ? parseInt(harga_jual, 10) : undefined;
+    const modal = harga_modal !== undefined ? parseInt(harga_modal, 10) : undefined;
+
+    if (stok !== undefined && stok < 0) {
+      return NextResponse.json({ error: "Jumlah stok tidak boleh negatif" }, { status: 400 });
+    }
+    if (jual !== undefined && jual < 0) {
+      return NextResponse.json({ error: "Harga jual tidak boleh negatif" }, { status: 400 });
+    }
+    if (modal !== undefined && modal < 0) {
+      return NextResponse.json({ error: "Harga modal tidak boleh negatif" }, { status: 400 });
+    }
+
     await updateStockItem(params.id, {
       nama_barang: nama_barang?.trim(),
       tanggal_masuk,
-      jumlah_stok: jumlah_stok !== undefined ? parseInt(jumlah_stok) : undefined,
+      jumlah_stok: stok,
       notes: notes?.trim(),
-      harga_jual: harga_jual !== undefined ? parseInt(harga_jual) : undefined,
-      harga_modal: harga_modal !== undefined ? parseInt(harga_modal) : undefined,
+      harga_jual: jual,
+      harga_modal: modal,
       updated_by: user.namaUser,
     });
 
@@ -37,7 +53,9 @@ export async function DELETE(
 ) {
   const user = await getSessionFromRequest(req);
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  if (user.role === "kasir") return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  if (user.role !== "owner" && user.role !== "gudang") {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
 
   try {
     await deleteStockItem(params.id);
