@@ -464,7 +464,7 @@ export async function getDashboardData() {
     return sum + (parseInt(r[5] || "0") - parseInt(r[6] || "0")) * parseInt(r[4] || "0");
   }, 0);
 
-  const transaksiTerbaru = groupTransactionRows(transRows).slice(0, 10);
+  const transaksiTerbaru = groupTransactionRows(transRows);
 
   return {
     total_stok_aktif: totalStokAktif,

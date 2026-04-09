@@ -127,7 +127,27 @@ export async function GET(req: NextRequest) {
       status: r[4] || "out of stock",
     }));
 
-    return NextResponse.json({ trendData, stokData, groupByMonth });
+    // ── Penjualan per barang chart ─────────────────────────────────────────
+    const penjualanMap = new Map<string, number>();
+    for (const r of transRows) {
+      const rawDate = r[1];
+      if (!rawDate) continue;
+      const txDate = new Date(rawDate);
+      if (isNaN(txDate.getTime())) continue;
+      if (txDate < fromDate || txDate > toDate) continue;
+      const namaBrg = r[3] || "";
+      const qty = parseInt(r[4] || "0");
+      penjualanMap.set(namaBrg, (penjualanMap.get(namaBrg) || 0) + qty);
+    }
+
+    const penjualanData = stockRows
+      .map((r) => ({
+        nama: r[1] || "",
+        qty: penjualanMap.get(r[1] || "") || 0,
+      }))
+      .sort((a, b) => b.qty - a.qty);
+
+    return NextResponse.json({ trendData, stokData, penjualanData, groupByMonth });
   } catch (err) {
     console.error(err);
     return NextResponse.json({ error: "Gagal mengambil data chart" }, { status: 500 });
