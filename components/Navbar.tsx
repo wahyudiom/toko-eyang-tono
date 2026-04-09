@@ -1,7 +1,7 @@
 "use client";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { LayoutDashboard, Package, ShoppingCart, History, LogOut, Store } from "lucide-react";
+import { LayoutDashboard, Package, ShoppingCart, History, LogOut, Store, Wallet } from "lucide-react";
 import { useState } from "react";
 import clsx from "clsx";
 
@@ -14,6 +14,7 @@ const navItems = {
   owner: [
     { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
     { href: "/stock", label: "Stok Barang", icon: Package },
+    { href: "/pengeluaran", label: "Pengeluaran", icon: Wallet },
     { href: "/kasir", label: "Kasir", icon: ShoppingCart },
     { href: "/histori", label: "Histori", icon: History },
   ],

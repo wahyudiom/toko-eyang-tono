@@ -39,6 +39,13 @@ export async function middleware(request: NextRequest) {
     );
   }
 
+  // /pengeluaran → owner only
+  if (pathname.startsWith("/pengeluaran") && user.role !== "owner") {
+    return NextResponse.redirect(
+      new URL(getHomeForRole(user.role), request.url)
+    );
+  }
+
   // /stock → owner & gudang only
   if (pathname.startsWith("/stock") && user.role === "kasir") {
     return NextResponse.redirect(new URL("/kasir", request.url));

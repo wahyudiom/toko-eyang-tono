@@ -481,3 +481,168 @@ export async function getDashboardData() {
     transaksi_terbaru: transaksiTerbaru,
   };
 }
+
+// ─── Pengeluaran (Expense) ─────────────────────────────────────────────────────
+
+export interface Expense {
+  id_expense: string;
+  tanggal: string;
+  kategori: string;
+  kategori_lainnya: string;
+  nominal: number;
+  penerima_uang: string;
+  notes: string;
+  created_at: string;
+  updated_at: string;
+  created_by: string;
+  updated_by: string;
+}
+
+function rowToExpense(r: string[]): Expense {
+  return {
+    id_expense: r[0] || "",
+    tanggal: r[1] || "",
+    kategori: r[2] || "",
+    kategori_lainnya: r[3] || "",
+    nominal: parseFloat(r[4] || "0"),
+    penerima_uang: r[5] || "",
+    notes: r[6] || "",
+    created_at: r[7] || "",
+    updated_at: r[8] || "",
+    created_by: r[9] || "",
+    updated_by: r[10] || "",
+  };
+}
+
+export async function getExpenses(): Promise<Expense[]> {
+  const sheets = createSheetsClient();
+  const res = await sheets.spreadsheets.values.get({
+    spreadsheetId: SPREADSHEET_ID,
+    range: "expense!A:K",
+  });
+  const rows = (res.data.values || []).slice(1).filter((r) => r[0]) as string[][];
+  return rows.map(rowToExpense).reverse(); // newest first
+}
+
+export async function createExpense(data: {
+  tanggal: string;
+  kategori: string;
+  kategori_lainnya: string;
+  nominal: number;
+  penerima_uang: string;
+  notes: string;
+  created_by: string;
+}): Promise<Expense> {
+  const sheets = createSheetsClient();
+  const ts = new Date().toISOString();
+  const rand = Math.random().toString(36).slice(2, 6).toUpperCase();
+  const id = `EXP-${ts.slice(0, 10).replace(/-/g, "")}-${rand}`;
+
+  const row = [
+    id,
+    data.tanggal,
+    data.kategori,
+    data.kategori_lainnya,
+    data.nominal,
+    data.penerima_uang,
+    data.notes,
+    ts,
+    ts,
+    data.created_by,
+    data.created_by,
+  ];
+
+  await sheets.spreadsheets.values.append({
+    spreadsheetId: SPREADSHEET_ID,
+    range: "expense!A:K",
+    valueInputOption: "USER_ENTERED",
+    requestBody: { values: [row] },
+  });
+
+  return rowToExpense(row.map(String));
+}
+
+export async function updateExpense(
+  id: string,
+  data: {
+    tanggal: string;
+    kategori: string;
+    kategori_lainnya: string;
+    nominal: number;
+    penerima_uang: string;
+    notes: string;
+    updated_by: string;
+  }
+): Promise<void> {
+  const sheets = createSheetsClient();
+  const res = await sheets.spreadsheets.values.get({
+    spreadsheetId: SPREADSHEET_ID,
+    range: "expense!A:K",
+  });
+  const rows = (res.data.values || []) as string[][];
+  const rowIndex = rows.findIndex((r, i) => i > 0 && r[0] === id);
+  if (rowIndex === -1) throw new Error("Data pengeluaran tidak ditemukan");
+
+  const sheetRow = rowIndex + 1;
+  const ts = new Date().toISOString();
+  const existing = rows[rowIndex];
+
+  await sheets.spreadsheets.values.update({
+    spreadsheetId: SPREADSHEET_ID,
+    range: `expense!A${sheetRow}:K${sheetRow}`,
+    valueInputOption: "USER_ENTERED",
+    requestBody: {
+      values: [[
+        id,
+        data.tanggal,
+        data.kategori,
+        data.kategori_lainnya,
+        data.nominal,
+        data.penerima_uang,
+        data.notes,
+        existing[7] || ts,        // created_at — unchanged
+        ts,                        // updated_at
+        existing[9] || data.updated_by, // created_by — unchanged
+        data.updated_by,           // updated_by
+      ]],
+    },
+  });
+}
+
+export async function deleteExpense(id: string): Promise<void> {
+  const sheets = createSheetsClient();
+
+  const [dataRes, spreadsheetRes] = await Promise.all([
+    sheets.spreadsheets.values.get({
+      spreadsheetId: SPREADSHEET_ID,
+      range: "expense!A:A",
+    }),
+    sheets.spreadsheets.get({ spreadsheetId: SPREADSHEET_ID }),
+  ]);
+
+  const rows = (dataRes.data.values || []) as string[][];
+  const rowIndex = rows.findIndex((r, i) => i > 0 && r[0] === id);
+  if (rowIndex === -1) throw new Error("Data pengeluaran tidak ditemukan");
+
+  const sheet = spreadsheetRes.data.sheets?.find(
+    (s) => s.properties?.title === "expense"
+  );
+  if (!sheet?.properties?.sheetId === undefined)
+    throw new Error("Sheet expense tidak ditemukan");
+
+  await sheets.spreadsheets.batchUpdate({
+    spreadsheetId: SPREADSHEET_ID,
+    requestBody: {
+      requests: [{
+        deleteDimension: {
+          range: {
+            sheetId: sheet!.properties!.sheetId!,
+            dimension: "ROWS",
+            startIndex: rowIndex,       // 0-based; rowIndex already skips header
+            endIndex: rowIndex + 1,
+          },
+        },
+      }],
+    },
+  });
+}
