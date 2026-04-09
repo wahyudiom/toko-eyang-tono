@@ -6,10 +6,9 @@ import LoadingSpinner from "@/components/LoadingSpinner";
 import type { Transaction } from "@/lib/sheets";
 import {
   LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid,
-  Tooltip, Legend, ResponsiveContainer, ReferenceLine, Cell,
+  Tooltip, Legend, ResponsiveContainer, Cell,
 } from "recharts";
 
-const STOCK_THRESHOLD = 10;
 const PAGE_SIZE_OPTIONS = [10, 20, 50, 100];
 
 interface DashboardData {
@@ -300,20 +299,8 @@ export default function DashboardPage() {
             {/* Bar Chart — Stok Barang */}
             <div className="card p-0">
               <div className="px-4 py-3 border-b border-gray-200">
-                <div className="flex items-start justify-between">
-                  <div>
-                    <h2 className="text-sm font-semibold text-gray-900">Stok Barang Saat Ini</h2>
-                    <p className="text-xs text-gray-400 mt-0.5">Kondisi real-time, tidak dipengaruhi filter tanggal</p>
-                  </div>
-                  <div className="flex items-center gap-3 shrink-0">
-                    <span className="flex items-center gap-1 text-xs text-gray-500">
-                      <span className="inline-block w-3 h-3 rounded-sm bg-blue-500" />Aman
-                    </span>
-                    <span className="flex items-center gap-1 text-xs text-red-500">
-                      <span className="inline-block w-3 h-3 rounded-sm bg-red-400" />Restock
-                    </span>
-                  </div>
-                </div>
+                <h2 className="text-sm font-semibold text-gray-900">Stok Barang Saat Ini</h2>
+                <p className="text-xs text-gray-400 mt-0.5">Kondisi real-time, tidak dipengaruhi filter tanggal</p>
               </div>
               <div className="p-4">
                 {chartData.stokData.length === 0 ? (
@@ -325,12 +312,7 @@ export default function DashboardPage() {
                       <XAxis dataKey="nama" tick={{ fontSize: 11, fill: "#374151" }} tickLine={false} axisLine={false} interval={0} angle={-35} textAnchor="end" />
                       <YAxis tick={{ fontSize: 11, fill: "#9ca3af" }} tickLine={false} axisLine={false} width={32} />
                       <Tooltip formatter={(value: number) => [value, "Stok"]} contentStyle={{ fontSize: 12, borderRadius: 8, border: "1px solid #e5e7eb" }} />
-                      <ReferenceLine y={STOCK_THRESHOLD} stroke="#ef4444" strokeDasharray="4 3" strokeWidth={1.5} label={{ value: `Min. ${STOCK_THRESHOLD}`, position: "insideTopRight", fontSize: 10, fill: "#ef4444", dy: -4 }} />
-                      <Bar dataKey="stok" radius={[4, 4, 0, 0]}>
-                        {chartData.stokData.map((entry, index) => (
-                          <Cell key={index} fill={entry.stok < STOCK_THRESHOLD ? "#f87171" : "#3b82f6"} />
-                        ))}
-                      </Bar>
+                      <Bar dataKey="stok" radius={[4, 4, 0, 0]} fill="#3b82f6" />
                     </BarChart>
                   </ResponsiveContainer>
                 )}
