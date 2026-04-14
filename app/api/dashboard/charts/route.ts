@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSessionFromRequest } from "@/lib/auth";
 import { google } from "googleapis";
+import { getAllStock } from "@/lib/sheets";
 
 const SPREADSHEET_ID = process.env.GOOGLE_SPREADSHEET_ID!;
 
@@ -45,39 +46,40 @@ export async function GET(req: NextRequest) {
 
   try {
     const sheets = createSheetsClient();
-    const [transRes, stockRes] = await Promise.all([
+    const [transRes, stockItems, expenseRes] = await Promise.all([
       sheets.spreadsheets.values.get({
         spreadsheetId: SPREADSHEET_ID,
         range: "transaksi_penjualan!A:P",
       }),
+      getAllStock(),
       sheets.spreadsheets.values.get({
         spreadsheetId: SPREADSHEET_ID,
-        range: "stock_barang!A:L",
+        range: "expense!A:K",
       }),
     ]);
 
     const transRows = (transRes.data.values || []).slice(1).filter((r) => r[0]) as string[][];
-    const stockRows = (stockRes.data.values || []).slice(1).filter((r) => r[0]) as string[][];
+    const expenseRows = (expenseRes.data.values || []).slice(1).filter((r) => r[0]) as string[][];
 
-    // ── Omzet & Laba chart ─────────────────────────────────────────────────
-    // Group transactions by day or month, deduplicate by id_transaksi for omzet
+    const getBucketKey = (date: Date) =>
+      groupByMonth
+        ? `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`
+        : `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+
     const omzetMap = new Map<string, number>();
-    const labaMap = new Map<string, number>();
+    const labaKotorMap = new Map<string, number>();
+    const pengeluaranMap = new Map<string, number>();
     const seenTrx = new Set<string>();
 
     for (const r of transRows) {
-      const rawDate = r[1]; // tanggal_transaksi
+      const rawDate = r[1];
       if (!rawDate) continue;
 
       const txDate = new Date(rawDate);
       if (isNaN(txDate.getTime())) continue;
       if (txDate < fromDate || txDate > toDate) continue;
 
-      const key = groupByMonth
-        ? `${txDate.getFullYear()}-${String(txDate.getMonth() + 1).padStart(2, "0")}`
-        : `${txDate.getFullYear()}-${String(txDate.getMonth() + 1).padStart(2, "0")}-${String(txDate.getDate()).padStart(2, "0")}`;
-
-      // Omzet: total_transaksi, only once per id_transaksi
+      const key = getBucketKey(txDate);
       const idTrx = r[0];
       if (!seenTrx.has(idTrx)) {
         seenTrx.add(idTrx);
@@ -85,49 +87,64 @@ export async function GET(req: NextRequest) {
         omzetMap.set(key, (omzetMap.get(key) || 0) + totalTrx);
       }
 
-      // Laba: (harga_jual - harga_modal) * qty — per row (per item)
       const qty = parseInt(r[4] || "0");
       const hargaJual = parseInt(r[5] || "0");
       const hargaModal = parseInt(r[6] || "0");
       const labaItem = (hargaJual - hargaModal) * qty;
-      labaMap.set(key, (labaMap.get(key) || 0) + labaItem);
+      labaKotorMap.set(key, (labaKotorMap.get(key) || 0) + labaItem);
     }
 
-    // Fill in missing dates/months in range with 0
-    const trendData: { label: string; omzet: number; laba: number }[] = [];
+    for (const r of expenseRows) {
+      const rawDate = r[1];
+      if (!rawDate) continue;
+
+      const expenseDate = new Date(rawDate);
+      if (isNaN(expenseDate.getTime())) continue;
+      if (expenseDate < fromDate || expenseDate > toDate) continue;
+
+      const key = getBucketKey(expenseDate);
+      const nominal = parseFloat(r[4] || "0");
+      pengeluaranMap.set(key, (pengeluaranMap.get(key) || 0) + nominal);
+    }
+
+    const trendData: { label: string; omzet: number; pengeluaran: number; laba: number }[] = [];
     if (groupByMonth) {
       const cur = new Date(fromDate.getFullYear(), fromDate.getMonth(), 1);
       const end = new Date(toDate.getFullYear(), toDate.getMonth(), 1);
       while (cur <= end) {
-        const key = `${cur.getFullYear()}-${String(cur.getMonth() + 1).padStart(2, "0")}`;
+        const key = getBucketKey(cur);
+        const pengeluaran = pengeluaranMap.get(key) || 0;
+        const labaKotor = labaKotorMap.get(key) || 0;
         trendData.push({
           label: cur.toLocaleDateString("id-ID", { month: "short", year: "numeric" }),
           omzet: omzetMap.get(key) || 0,
-          laba: labaMap.get(key) || 0,
+          pengeluaran,
+          laba: labaKotor - pengeluaran,
         });
         cur.setMonth(cur.getMonth() + 1);
       }
     } else {
       const cur = new Date(fromDate);
       while (cur <= toDate) {
-        const key = `${cur.getFullYear()}-${String(cur.getMonth() + 1).padStart(2, "0")}-${String(cur.getDate()).padStart(2, "0")}`;
+        const key = getBucketKey(cur);
+        const pengeluaran = pengeluaranMap.get(key) || 0;
+        const labaKotor = labaKotorMap.get(key) || 0;
         trendData.push({
           label: cur.toLocaleDateString("id-ID", { day: "numeric", month: "short" }),
           omzet: omzetMap.get(key) || 0,
-          laba: labaMap.get(key) || 0,
+          pengeluaran,
+          laba: labaKotor - pengeluaran,
         });
         cur.setDate(cur.getDate() + 1);
       }
     }
 
-    // ── Stok barang chart ──────────────────────────────────────────────────
-    const stokData = stockRows.map((r) => ({
-      nama: r[1] || "",
-      stok: parseInt(r[3] || "0"),
-      status: r[4] || "out of stock",
+    const stokData = stockItems.map((item) => ({
+      nama: item.nama_barang,
+      stok: item.jumlah_stok,
+      status: item.status_barang,
     }));
 
-    // ── Penjualan per barang chart ─────────────────────────────────────────
     const penjualanMap = new Map<string, number>();
     for (const r of transRows) {
       const rawDate = r[1];
@@ -135,15 +152,15 @@ export async function GET(req: NextRequest) {
       const txDate = new Date(rawDate);
       if (isNaN(txDate.getTime())) continue;
       if (txDate < fromDate || txDate > toDate) continue;
-      const namaBrg = r[3] || "";
+      const idBarang = r[2] || "";
       const qty = parseInt(r[4] || "0");
-      penjualanMap.set(namaBrg, (penjualanMap.get(namaBrg) || 0) + qty);
+      penjualanMap.set(idBarang, (penjualanMap.get(idBarang) || 0) + qty);
     }
 
-    const penjualanData = stockRows
-      .map((r) => ({
-        nama: r[1] || "",
-        qty: penjualanMap.get(r[1] || "") || 0,
+    const penjualanData = stockItems
+      .map((item) => ({
+        nama: item.nama_barang,
+        qty: penjualanMap.get(item.id_barang) || 0,
       }))
       .sort((a, b) => b.qty - a.qty);
 

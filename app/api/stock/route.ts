@@ -33,7 +33,7 @@ export async function POST(req: NextRequest) {
     const stok = parseInt(jumlah_stok, 10);
     const jual = parseInt(harga_jual, 10);
     const modal = parseInt(harga_modal, 10);
-    if (stok < 0) return NextResponse.json({ error: "Jumlah stok tidak boleh negatif" }, { status: 400 });
+    if (stok < 0) return NextResponse.json({ error: "Stok awal tidak boleh negatif" }, { status: 400 });
     if (jual < 0) return NextResponse.json({ error: "Harga jual tidak boleh negatif" }, { status: 400 });
     if (modal < 0) return NextResponse.json({ error: "Harga modal tidak boleh negatif" }, { status: 400 });
 

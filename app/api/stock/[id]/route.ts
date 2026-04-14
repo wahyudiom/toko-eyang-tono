@@ -20,8 +20,11 @@ export async function PUT(
     const jual = harga_jual !== undefined ? parseInt(harga_jual, 10) : undefined;
     const modal = harga_modal !== undefined ? parseInt(harga_modal, 10) : undefined;
 
-    if (stok !== undefined && stok < 0) {
-      return NextResponse.json({ error: "Jumlah stok tidak boleh negatif" }, { status: 400 });
+    if (stok === undefined || Number.isNaN(stok)) {
+      return NextResponse.json({ error: "Tambah stok wajib diisi angka" }, { status: 400 });
+    }
+    if (stok < 0) {
+      return NextResponse.json({ error: "Tambah stok tidak boleh negatif" }, { status: 400 });
     }
     if (jual !== undefined && jual < 0) {
       return NextResponse.json({ error: "Harga jual tidak boleh negatif" }, { status: 400 });

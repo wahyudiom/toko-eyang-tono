@@ -102,7 +102,7 @@ export default function StockPage() {
     setForm({
       nama_barang: item.nama_barang,
       tanggal_masuk: item.tanggal_masuk,
-      jumlah_stok: String(item.jumlah_stok),
+      jumlah_stok: "0",
       notes: item.notes,
       harga_jual: String(item.harga_jual),
       harga_modal: String(item.harga_modal),
@@ -195,7 +195,7 @@ export default function StockPage() {
           <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
           <input
             type="text"
-            placeholder="Cari nama atau ID barang..."
+            placeholder="Cari nama barang..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="form-input pl-9"
@@ -262,7 +262,6 @@ export default function StockPage() {
               <table className="w-full">
                 <thead className="bg-gray-50">
                   <tr>
-                    <th className="table-th">ID Barang</th>
                     <th className="table-th">Nama Barang</th>
                     <th className="table-th">Tgl Masuk</th>
                     <th className="table-th text-center">Stok</th>
@@ -277,7 +276,6 @@ export default function StockPage() {
                 <tbody className="divide-y divide-gray-100">
                   {filtered.map((item) => (
                     <tr key={item.id_barang} className="hover:bg-gray-50">
-                      <td className="table-td font-mono text-xs text-gray-500">{item.id_barang}</td>
                       <td className="table-td font-medium">{item.nama_barang}</td>
                       <td className="table-td text-gray-500 text-xs">{formatDate(item.tanggal_masuk)}</td>
                       <td className="table-td text-center font-semibold">{item.jumlah_stok}</td>
@@ -350,7 +348,7 @@ export default function StockPage() {
               />
             </div>
             <div>
-              <label className="form-label">Jumlah Stok *</label>
+              <label className="form-label">Stok Awal *</label>
               <input
                 type="number"
                 value={form.jumlah_stok}
@@ -360,6 +358,9 @@ export default function StockPage() {
                 placeholder="0"
                 required
               />
+              <p className="mt-1 text-xs text-gray-400">
+                Disimpan sebagai stok masuk awal barang.
+              </p>
             </div>
           </div>
           <div className="grid grid-cols-2 gap-3">
@@ -421,6 +422,18 @@ export default function StockPage() {
             <label className="form-label text-xs text-gray-400">ID Barang</label>
             <p className="text-sm font-mono text-gray-600">{selectedItem?.id_barang}</p>
           </div>
+          <div className="grid grid-cols-2 gap-3 rounded-xl bg-gray-50 px-3 py-2 text-sm">
+            <div>
+              <p className="text-xs text-gray-400">Stok Saat Ini</p>
+              <p className="font-semibold text-gray-900">{selectedItem?.jumlah_stok ?? 0}</p>
+            </div>
+            <div>
+              <p className="text-xs text-gray-400">Total Stok Masuk</p>
+              <p className="font-semibold text-gray-900">
+                {selectedItem?.stok_masuk_total ?? selectedItem?.jumlah_stok ?? 0}
+              </p>
+            </div>
+          </div>
           <div>
             <label className="form-label">Nama Barang *</label>
             <input
@@ -443,7 +456,7 @@ export default function StockPage() {
               />
             </div>
             <div>
-              <label className="form-label">Jumlah Stok *</label>
+              <label className="form-label">Tambah Stok *</label>
               <input
                 type="number"
                 value={form.jumlah_stok}
@@ -452,6 +465,9 @@ export default function StockPage() {
                 min="0"
                 required
               />
+              <p className="mt-1 text-xs text-gray-400">
+                Isi `0` jika hanya ingin ubah data barang tanpa menambah stok.
+              </p>
             </div>
           </div>
           <div className="grid grid-cols-2 gap-3">

@@ -113,7 +113,7 @@ export default function KasirPage() {
     setCart([]);
     setNamaPembeli("");
     setNoHp("");
-    setMetodePembayaran("Tunai");
+    setMetodePembayaran("tunai");
     setFormError("");
   }
 

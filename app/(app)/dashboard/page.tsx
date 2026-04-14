@@ -18,6 +18,9 @@ interface DashboardData {
   omzet: number;
   omzet_hari_ini: number;
   omzet_bulan_ini: number;
+  pengeluaran: number;
+  pengeluaran_hari_ini: number;
+  pengeluaran_bulan_ini: number;
   laba: number;
   laba_hari_ini: number;
   laba_bulan_ini: number;
@@ -26,7 +29,7 @@ interface DashboardData {
   transaksi_terbaru: Transaction[];
 }
 
-interface TrendPoint { label: string; omzet: number; laba: number; }
+interface TrendPoint { label: string; omzet: number; pengeluaran: number; laba: number; }
 interface StokPoint { nama: string; stok: number; status: string; }
 interface PenjualanPoint { nama: string; qty: number; }
 interface ChartData {
@@ -159,13 +162,15 @@ export default function DashboardPage() {
   const statsRow1 = [
     { label: "Omzet Hari Ini", value: formatCurrency(data.omzet_hari_ini), icon: CalendarDays, color: "text-blue-600", bg: "bg-blue-50" },
     { label: "Omzet Bulan Ini", value: formatCurrency(data.omzet_bulan_ini), icon: Calendar, color: "text-indigo-600", bg: "bg-indigo-50" },
-    { label: "Laba Hari Ini", value: formatCurrency(data.laba_hari_ini), icon: TrendingUp, color: "text-emerald-600", bg: "bg-emerald-50" },
-    { label: "Laba Bulan Ini", value: formatCurrency(data.laba_bulan_ini), icon: BarChart2, color: "text-green-600", bg: "bg-green-50" },
+    { label: "Pengeluaran Hari Ini", value: formatCurrency(data.pengeluaran_hari_ini), icon: DollarSign, color: "text-rose-600", bg: "bg-rose-50" },
+    { label: "Pengeluaran Bulan Ini", value: formatCurrency(data.pengeluaran_bulan_ini), icon: BarChart2, color: "text-orange-600", bg: "bg-orange-50" },
   ];
 
   const statsRow2 = [
+    { label: "Laba Bersih Hari Ini", value: formatCurrency(data.laba_hari_ini), icon: TrendingUp, color: "text-emerald-600", bg: "bg-emerald-50" },
+    { label: "Laba Bersih Bulan Ini", value: formatCurrency(data.laba_bulan_ini), icon: BarChart2, color: "text-green-600", bg: "bg-green-50" },
     { label: "Terjual Hari Ini", value: `${data.terjual_hari_ini} Pcs`, icon: ShoppingBag, color: "text-purple-600", bg: "bg-purple-50" },
-    { label: "Terjual Bulan Ini", value: `${data.terjual_bulan_ini} Pcs`, icon: DollarSign, color: "text-yellow-600", bg: "bg-yellow-50" },
+    { label: "Terjual Bulan Ini", value: `${data.terjual_bulan_ini} Pcs`, icon: Calendar, color: "text-yellow-600", bg: "bg-yellow-50" },
   ];
 
   // Pagination page numbers to show
@@ -211,7 +216,7 @@ export default function DashboardPage() {
       </div>
 
       {/* Stats Row 2 — Terjual */}
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {statsRow2.map((stat) => {
           const Icon = stat.icon;
           return (
@@ -271,12 +276,12 @@ export default function DashboardPage() {
             {/* Line Chart — Omzet & Laba */}
             <div className="card p-0">
               <div className="px-4 py-3 border-b border-gray-200">
-                <h2 className="text-sm font-semibold text-gray-900">Omzet &amp; Laba</h2>
+                <h2 className="text-sm font-semibold text-gray-900">Omzet, Pengeluaran &amp; Laba Bersih</h2>
                 <p className="text-xs text-gray-400 mt-0.5">{range.from} s/d {range.to}</p>
               </div>
               <div className="p-4">
-                {chartData.trendData.every((d) => d.omzet === 0 && d.laba === 0) ? (
-                  <p className="text-center text-sm text-gray-400 py-10">Tidak ada transaksi di rentang tanggal ini</p>
+                {chartData.trendData.every((d) => d.omzet === 0 && d.pengeluaran === 0 && d.laba === 0) ? (
+                  <p className="text-center text-sm text-gray-400 py-10">Tidak ada transaksi atau pengeluaran di rentang tanggal ini</p>
                 ) : (
                   <ResponsiveContainer width="100%" height={280}>
                     <LineChart data={chartData.trendData} margin={{ top: 4, right: 8, left: 0, bottom: 0 }}>
@@ -284,11 +289,23 @@ export default function DashboardPage() {
                       <XAxis dataKey="label" tick={{ fontSize: 11, fill: "#9ca3af" }} tickLine={false} axisLine={false} />
                       <YAxis tickFormatter={formatAxisCurrency} tick={{ fontSize: 11, fill: "#9ca3af" }} tickLine={false} axisLine={false} width={48} />
                       <Tooltip
-                        formatter={(value: number, name: string) => [formatCurrency(value), name === "omzet" ? "Omzet" : "Laba"]}
+                        formatter={(value: number, name: string) => {
+                          if (name === "omzet") return [formatCurrency(value), "Omzet"];
+                          if (name === "pengeluaran") return [formatCurrency(value), "Pengeluaran"];
+                          return [formatCurrency(value), "Laba Bersih"];
+                        }}
                         contentStyle={{ fontSize: 12, borderRadius: 8, border: "1px solid #e5e7eb" }}
                       />
-                      <Legend formatter={(value) => (value === "omzet" ? "Omzet" : "Laba")} wrapperStyle={{ fontSize: 12 }} />
+                      <Legend
+                        formatter={(value) => {
+                          if (value === "omzet") return "Omzet";
+                          if (value === "pengeluaran") return "Pengeluaran";
+                          return "Laba Bersih";
+                        }}
+                        wrapperStyle={{ fontSize: 12 }}
+                      />
                       <Line type="monotone" dataKey="omzet" stroke="#3b82f6" strokeWidth={2} dot={false} activeDot={{ r: 4 }} />
+                      <Line type="monotone" dataKey="pengeluaran" stroke="#f97316" strokeWidth={2} dot={false} activeDot={{ r: 4 }} />
                       <Line type="monotone" dataKey="laba" stroke="#10b981" strokeWidth={2} dot={false} activeDot={{ r: 4 }} />
                     </LineChart>
                   </ResponsiveContainer>
